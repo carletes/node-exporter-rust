@@ -1,0 +1,24 @@
+[package]
+name = "node-exporter"
+version = "0.1.0"
+description = "A partial clone of the Prometheus node exporter written in Rust"
+edition = "2021"
+
+[dependencies]
+actix-web = { version = "4.4.0" }
+lazy_static = "^1.4"
+procfs = "^0.16"
+prometheus = { version = "0.13.0", features = [ "process" ] }
+tokio = { version = "1.34.0", features = [
+    "rt-multi-thread",
+    "rt",
+    "time",
+    "macros",
+    "io-util",
+    "net",
+] }
+
+[profile.release]
+lto = "thin"
+opt-level = "z"
+strip = true

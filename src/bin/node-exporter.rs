@@ -1,24 +1,13 @@
 use actix_web::{App, HttpResponse, HttpServer, Responder, get, http::KeepAlive};
+use node_exporter::SystemState;
 use procfs::{CurrentSI, KernelStats};
-use prometheus::{Encoder, TextEncoder};
-
-mod metrics;
-
-struct State {
-    pub kernel_stats: KernelStats,
-}
 
 #[get("/metrics")]
 async fn metrics_endpoint() -> impl Responder{
-    let state = State { kernel_stats : KernelStats::current().unwrap()};
+    let state = SystemState { kernel_stats : KernelStats::current().unwrap()};
 
-    metrics::update(&state);
-
-    let encoder = TextEncoder::new();
-    let metric_families = prometheus::gather();
-    let mut buffer = vec![];
-    encoder.encode(&metric_families, &mut buffer).unwrap();
-    HttpResponse::Ok().body(buffer)
+    let metrics = node_exporter::dump(&state);
+    HttpResponse::Ok().body(metrics)
 }
 
 #[actix_web::main]

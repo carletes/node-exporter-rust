@@ -42,6 +42,15 @@ register_metric_vec!(
     |_state| {}
 );
 
+register_metric_vec!(
+    NODE_CPU_FREQUENCY_MIN_HERZ,
+    GaugeVec,
+    node_cpu_frequency_min_hertz,
+    "Minimum CPU thread frequency in hertz.",
+    &["cpu"],
+    |_state| {}
+);
+
 register_metric!(
     NODE_PROCS_BLOCKED,
     IntGauge,

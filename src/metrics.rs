@@ -1,7 +1,7 @@
 use crate::{register_metric, register_metric_vec};
 use static_init::{constructor, dynamic};
 
-use prometheus::{Gauge, GaugeVec, IntCounter, IntCounterVec};
+use prometheus::{Gauge, GaugeVec, IntCounter, IntCounterVec, IntGauge};
 
 register_metric!(
     NODE_BOOT_TIME_SECONDS,
@@ -44,20 +44,30 @@ register_metric_vec!(
 
 register_metric!(
     NODE_PROCS_BLOCKED,
-    Gauge,
+    IntGauge,
     node_procs_blocked,
     "Number of processes blocked waiting for I/O to complete.",
     |state| {
-        NODE_PROCS_BLOCKED.set(state.kernel_stats.procs_blocked.unwrap() as f64);
+        NODE_PROCS_BLOCKED.set(
+            state
+                .kernel_stats
+                .procs_blocked
+                .expect("Invalid value for node_procs_blocked") as i64,
+        )
     }
 );
 
 register_metric!(
     NODE_PROCS_RUNNING,
-    Gauge,
+    IntGauge,
     node_procs_running,
     "Number of processes in runnable state.",
     |state| {
-        NODE_PROCS_RUNNING.set(state.kernel_stats.procs_running.unwrap() as f64);
+        NODE_PROCS_RUNNING.set(
+            state
+                .kernel_stats
+                .procs_running
+                .expect("Invalid value for node_procs_running") as i64,
+        );
     }
 );

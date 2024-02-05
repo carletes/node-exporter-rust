@@ -1,12 +1,17 @@
 use actix_web::{App, HttpResponse, HttpServer, Responder, get, http::KeepAlive};
 use node_exporter::SystemState;
 
+fn _metrics() -> node_exporter::Result<String> {
+    let state = SystemState::new()?;
+    Ok(node_exporter::dump(&state)?)
+}
+
 #[get("/metrics")]
 async fn metrics_endpoint() -> impl Responder{
-    let state = SystemState::new();
-
-    let metrics = node_exporter::dump(&state);
-    HttpResponse::Ok().body(metrics)
+    match _metrics() {
+        Ok(metrics) => HttpResponse::Ok().body(metrics),
+        Err(_) => HttpResponse::InternalServerError().finish(),
+    }
 }
 
 #[actix_web::main]

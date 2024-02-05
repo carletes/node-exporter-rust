@@ -7,17 +7,19 @@ use static_init::dynamic;
 
 mod metrics;
 
+pub type Result<T> = anyhow::Result<T>;
+
 pub struct SystemState {
     pub kernel_stats: KernelStats,
     pub cpu_info: CpuInfo,
 }
 
 impl SystemState {
-    pub fn new() -> Self {
-        SystemState {
-            cpu_info: CpuInfo::current().unwrap(),
-            kernel_stats: KernelStats::current().unwrap(),
-        }
+    pub fn new() -> Result<Self> {
+        Ok(SystemState {
+            cpu_info: CpuInfo::current()?,
+            kernel_stats: KernelStats::current()?,
+        })
     }
 }
 
@@ -52,7 +54,7 @@ impl UpdateRegistry {
         self.r.write().register(m);
     }
 
-    fn dump(&self, state: &SystemState) -> String {
+    fn dump(&self, state: &SystemState) -> Result<String> {
         for m in &self.r.read().metrics {
             m.update(state);
         }
@@ -60,8 +62,8 @@ impl UpdateRegistry {
         let mut buffer = vec![];
         let encoder = TextEncoder::new();
         let metric_families = prometheus::gather();
-        encoder.encode(&metric_families, &mut buffer).unwrap();
-        String::from_utf8(buffer).unwrap()
+        encoder.encode(&metric_families, &mut buffer)?;
+        Ok(String::from_utf8(buffer)?)
     }
 }
 
@@ -71,8 +73,8 @@ static UPDATE_REGISTRY: UpdateRegistry = {
     r
 };
 
-pub fn dump(state: &SystemState) -> String {
-    UPDATE_REGISTRY.dump(state)
+pub fn dump(state: &SystemState) -> Result<String> {
+    Ok(UPDATE_REGISTRY.dump(state)?)
 }
 
 #[macro_export]
@@ -81,7 +83,8 @@ macro_rules! register_metric {
         #[dynamic]
         static $ref: $type = {
             let m: $type =
-                prometheus::$type::with_opts(prometheus::opts!(stringify!($ctor), $help)).unwrap();
+                prometheus::$type::with_opts(prometheus::opts!(stringify!($ctor), $help))
+                    .expect("Error registering metric ");
             let _ = prometheus::register(Box::new(m.clone()));
             m
         };
@@ -103,7 +106,7 @@ macro_rules! register_metric_vec {
         static $ref: $type = {
             let m: $type =
                 prometheus::$type::new(prometheus::opts!(stringify!($ctor), $help), $labels)
-                    .unwrap();
+                    .expect("Error registering metric ");
             let _ = prometheus::register(Box::new(m.clone()));
             m
         };

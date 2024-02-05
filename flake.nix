@@ -12,6 +12,7 @@
       {
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
+            prometheus-node-exporter
             rustup
 
             # Keep this line if you use bash.

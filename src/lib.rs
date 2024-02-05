@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use parking_lot::RwLock;
-use procfs::KernelStats;
+use procfs::{CpuInfo, Current, CurrentSI, KernelStats};
 use prometheus::{Encoder, TextEncoder};
 use static_init::dynamic;
 
@@ -9,6 +9,16 @@ mod metrics;
 
 pub struct SystemState {
     pub kernel_stats: KernelStats,
+    pub cpu_info: CpuInfo,
+}
+
+impl SystemState {
+    pub fn new() -> Self {
+        SystemState {
+            cpu_info: CpuInfo::current().unwrap(),
+            kernel_stats: KernelStats::current().unwrap(),
+        }
+    }
 }
 
 struct MetricUpdate {

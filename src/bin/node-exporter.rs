@@ -1,10 +1,9 @@
 use actix_web::{App, HttpResponse, HttpServer, Responder, get, http::KeepAlive};
 use node_exporter::SystemState;
-use procfs::{CurrentSI, KernelStats};
 
 #[get("/metrics")]
 async fn metrics_endpoint() -> impl Responder{
-    let state = SystemState { kernel_stats : KernelStats::current().unwrap()};
+    let state = SystemState::new();
 
     let metrics = node_exporter::dump(&state);
     HttpResponse::Ok().body(metrics)

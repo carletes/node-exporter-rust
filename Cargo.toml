@@ -19,7 +19,7 @@ anyhow = "1.0.79"
 lazy_static = "^1.4"
 parking_lot = "0.12.1"
 procfs = "^0.16"
-prometheus = { version = "0.13.0", features = [ "process" ] }
+prometheus = { version = "0.13.0", features = [] }
 static_init = "1.0.3"
 tokio = { version = "1.35.1", features = [
     "rt-multi-thread",

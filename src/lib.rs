@@ -84,7 +84,7 @@ macro_rules! register_metric {
         static $ref: $type = {
             let m: $type =
                 prometheus::$type::with_opts(prometheus::opts!(stringify!($ctor), $help))
-                    .expect("Error registering metric ");
+                    .expect("Error registering metric");
             let _ = prometheus::register(Box::new(m.clone()));
             m
         };

@@ -9,27 +9,53 @@ mod metrics;
 
 pub type Result<T> = anyhow::Result<T>;
 
-pub struct SystemState {
-    pub kernel_stats: KernelStats,
-    pub cpu_info: CpuInfo,
+trait SystemState {
+    fn boot_time(&self) -> u64;
+    fn context_switches(&self) -> u64;
+    fn procs_blocked(&self) -> Option<u32>;
+    fn procs_running(&self) -> Option<u32>;
 }
 
-impl SystemState {
-    pub fn new() -> Result<Self> {
-        Ok(SystemState {
+struct CurrentSystemState {
+    kernel_stats: KernelStats,
+    cpu_info: CpuInfo,
+}
+
+impl CurrentSystemState {
+    fn new() -> Result<Self> {
+        Ok(CurrentSystemState {
             cpu_info: CpuInfo::current()?,
             kernel_stats: KernelStats::current()?,
         })
     }
 }
 
+impl SystemState for CurrentSystemState {
+    fn boot_time(&self) -> u64 {
+        self.kernel_stats.btime
+    }
+
+    fn context_switches(&self) -> u64 {
+        self.kernel_stats.ctxt
+    }
+
+    fn procs_blocked(&self) -> Option<u32> {
+        self.kernel_stats.procs_blocked
+    }
+
+    fn procs_running(&self) -> Option<u32> {
+        self.kernel_stats.procs_running
+    }
+}
+
 struct MetricUpdate {
-    update: Box<dyn Fn(&SystemState) -> () + Send + Sync>,
+    update: Box<dyn Fn(&dyn SystemState) -> Result<()> + Send + Sync>,
 }
 
 impl MetricUpdate {
-    fn update(&self, state: &SystemState) -> () {
-        (self.update)(state);
+    fn update(&self, state: &dyn SystemState) -> Result<()> {
+        (self.update)(state)?;
+        Ok(())
     }
 }
 
@@ -54,9 +80,10 @@ impl UpdateRegistry {
         self.r.write().register(m);
     }
 
-    fn dump(&self, state: &SystemState) -> Result<String> {
+    fn dump(&self, state: &dyn SystemState) -> Result<String> {
         for m in &self.r.read().metrics {
-            m.update(state);
+            // XXX Collect errors instead of returning a failure after the first error.
+            m.update(state)?;
         }
 
         let mut buffer = vec![];
@@ -73,8 +100,9 @@ static UPDATE_REGISTRY: UpdateRegistry = {
     r
 };
 
-pub fn dump(state: &SystemState) -> Result<String> {
-    Ok(UPDATE_REGISTRY.dump(state)?)
+pub fn dump() -> Result<String> {
+    let state = CurrentSystemState::new()?;
+    Ok(UPDATE_REGISTRY.dump(&state)?)
 }
 
 #[macro_export]

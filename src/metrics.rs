@@ -1,26 +1,32 @@
 use crate::{register_metric, register_metric_vec};
 use static_init::{constructor, dynamic};
 
-use prometheus::{Gauge, GaugeVec, IntCounter, IntCounterVec, IntGauge};
+use prometheus::{GaugeVec, IntCounterVec, IntGauge};
 
 register_metric!(
     NODE_BOOT_TIME_SECONDS,
-    Gauge,
+    IntGauge,
     node_boot_time_seconds,
     "Node boot time, in unixtime.",
     |state| {
-        NODE_BOOT_TIME_SECONDS.set(state.kernel_stats.btime as f64);
+        // By casting down from `u64` to `i64` the longest representable boot time goes down to
+        // `i64::MAX` / (86400 * 365.4) years, which is a long time.
+        NODE_BOOT_TIME_SECONDS.set(i64::try_from(state.boot_time())?);
+        Ok(())
     }
 );
 
 register_metric!(
     NODE_CONTEXT_SWITCHES_TOTAL,
-    IntCounter,
+    IntGauge,
     node_context_switches_total,
     "Total number of context switches.",
     |state| {
-        NODE_CONTEXT_SWITCHES_TOTAL
-            .inc_by(state.kernel_stats.ctxt - NODE_CONTEXT_SWITCHES_TOTAL.get());
+        // By casting down from `u64` to `i64` the longest representable number of context switches
+        // since boot time goes down to `i64::MAX` / (86400 * 365.4), which I naively believe to be
+        // enough.
+        NODE_CONTEXT_SWITCHES_TOTAL.set(i64::try_from(state.context_switches())?);
+        Ok(())
     }
 );
 
@@ -30,7 +36,7 @@ register_metric_vec!(
     node_cpu_core_throttles_total,
     "Number of times this CPU core has been throttled.",
     &["core", "package"],
-    |_state| {}
+    |_state| { Ok(()) }
 );
 
 register_metric_vec!(
@@ -39,7 +45,7 @@ register_metric_vec!(
     node_cpu_frequency_max_hertz,
     "Maximum CPU thread frequency in hertz.",
     &["cpu"],
-    |_state| {}
+    |_state| { Ok(()) }
 );
 
 register_metric_vec!(
@@ -48,7 +54,7 @@ register_metric_vec!(
     node_cpu_frequency_min_hertz,
     "Minimum CPU thread frequency in hertz.",
     &["cpu"],
-    |_state| {}
+    |_state| { Ok(()) }
 );
 
 register_metric!(
@@ -57,12 +63,16 @@ register_metric!(
     node_procs_blocked,
     "Number of processes blocked waiting for I/O to complete.",
     |state| {
-        NODE_PROCS_BLOCKED.set(
-            state
-                .kernel_stats
-                .procs_blocked
-                .expect("Invalid value for node_procs_blocked") as i64,
-        )
+        match state.procs_blocked() {
+            Some(value) => {
+                NODE_PROCS_BLOCKED.set(value.into());
+            }
+            None => {
+                // I _think_ a `None` here means that we do not know how many processes are in this
+                // state, so we cannot return a meaningful value for this metric
+            }
+        }
+        Ok(())
     }
 );
 
@@ -72,11 +82,15 @@ register_metric!(
     node_procs_running,
     "Number of processes in runnable state.",
     |state| {
-        NODE_PROCS_RUNNING.set(
-            state
-                .kernel_stats
-                .procs_running
-                .expect("Invalid value for node_procs_running") as i64,
-        );
+        match state.procs_running() {
+            Some(value) => {
+                NODE_PROCS_BLOCKED.set(value.into());
+            }
+            None => {
+                // I _think_ a `None` here means that we do not know how many processes are in this
+                // state, so we cannot return a meaningful value for this metric
+            }
+        }
+        Ok(())
     }
 );

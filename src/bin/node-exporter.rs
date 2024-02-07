@@ -3,7 +3,7 @@ use node_exporter::SystemState;
 
 fn _metrics() -> node_exporter::Result<String> {
     let state = SystemState::new()?;
-    Ok(node_exporter::dump(&state)?)
+    node_exporter::dump(&state)
 }
 
 #[get("/metrics")]

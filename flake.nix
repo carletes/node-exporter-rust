@@ -17,6 +17,8 @@
 
             # Keep this line if you use bash.
             bashInteractive
+          ] ++ lib.optionals stdenv.isDarwin [
+            iconv
           ];
 
           shellHook = ''

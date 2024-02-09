@@ -102,7 +102,11 @@ static UPDATE_REGISTRY: UpdateRegistry = {
 
 pub fn dump() -> Result<String> {
     let state = CurrentSystemState::new()?;
-    Ok(UPDATE_REGISTRY.dump(&state)?)
+    dump_with_state(&state)
+}
+
+fn dump_with_state(state: &dyn SystemState) -> Result<String> {
+    Ok(UPDATE_REGISTRY.dump(state)?)
 }
 
 #[macro_export]
@@ -147,4 +151,47 @@ macro_rules! register_metric_vec {
             $crate::UPDATE_REGISTRY.register(update);
         }
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use lazy_static::lazy_static;
+    use parking_lot::{const_mutex, Mutex};
+
+    use super::SystemState;
+
+    #[derive(Default)]
+    pub struct MockSystemState {
+        pub boot_time: u64,
+        pub context_switches: u64,
+        pub procs_blocked: Option<u32>,
+        pub procs_running: Option<u32>,
+    }
+
+    impl SystemState for MockSystemState {
+        fn boot_time(&self) -> u64 {
+            self.boot_time
+        }
+
+        fn context_switches(&self) -> u64 {
+            self.context_switches
+        }
+
+        fn procs_blocked(&self) -> Option<u32> {
+            self.procs_blocked
+        }
+
+        fn procs_running(&self) -> Option<u32> {
+            self.procs_running
+        }
+    }
+
+    lazy_static! {
+        static ref LOCK: Mutex<u8> = const_mutex(0);
+    }
+
+    pub fn dump_with_state(state: &dyn SystemState) -> super::Result<String> {
+        let _unused = LOCK.lock();
+        super::dump_with_state(state)
+    }
 }

@@ -16,6 +16,28 @@ register_metric!(
     }
 );
 
+#[cfg(test)]
+mod tests_boot_time {
+    use crate::tests::{dump_with_state, MockSystemState};
+
+    #[test]
+    fn valid() -> crate::Result<()> {
+        let mut state = MockSystemState::default();
+        state.boot_time = 42;
+        let m = dump_with_state(&state)?;
+        assert!(m.contains("node_boot_time_seconds 42"), "Metrics: <{}>", m);
+        Ok(())
+    }
+
+    #[test]
+    fn too_large() {
+        let mut state = MockSystemState::default();
+        state.boot_time = (i64::MAX as u64) + 1;
+        let m = dump_with_state(&state);
+        assert!(m.is_err());
+    }
+}
+
 register_metric!(
     NODE_CONTEXT_SWITCHES_TOTAL,
     IntGauge,
@@ -29,6 +51,32 @@ register_metric!(
         Ok(())
     }
 );
+
+#[cfg(test)]
+mod tests_context_switches {
+    use crate::tests::{dump_with_state, MockSystemState};
+
+    #[test]
+    fn valid() -> crate::Result<()> {
+        let mut state = MockSystemState::default();
+        state.context_switches = 42;
+        let m = dump_with_state(&state)?;
+        assert!(
+            m.contains("node_context_switches_total 42"),
+            "Metrics: <{}>",
+            m
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn too_large() {
+        let mut state = MockSystemState::default();
+        state.context_switches = (i64::MAX as u64) + 1;
+        let m = dump_with_state(&state);
+        assert!(m.is_err());
+    }
+}
 
 register_metric_vec!(
     NODE_CPU_CORE_THROTTLES_TOTAL,
@@ -76,6 +124,19 @@ register_metric!(
     }
 );
 
+#[cfg(test)]
+mod tests_procs_blocked {
+    use crate::tests::{dump_with_state, MockSystemState};
+
+    #[test]
+    fn procs_blocked_unavailable() {
+        let mut state = MockSystemState::default();
+        state.procs_blocked = None;
+        let m = dump_with_state(&state);
+        assert!(m.is_ok());
+    }
+}
+
 register_metric!(
     NODE_PROCS_RUNNING,
     IntGauge,
@@ -94,3 +155,16 @@ register_metric!(
         Ok(())
     }
 );
+
+#[cfg(test)]
+mod tests_procs_running {
+    use crate::tests::{dump_with_state, MockSystemState};
+
+    #[test]
+    fn procs_running_unavailable() {
+        let mut state = MockSystemState::default();
+        state.procs_running = None;
+        let m = dump_with_state(&state);
+        assert!(m.is_ok());
+    }
+}

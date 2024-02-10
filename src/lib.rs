@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use anyhow::anyhow;
 use parking_lot::RwLock;
 use procfs::{CpuInfo, Current, CurrentSI, KernelStats};
 use prometheus::{Encoder, TextEncoder};
@@ -48,14 +49,65 @@ impl SystemState for CurrentSystemState {
     }
 }
 
+enum MetricRef {
+    GaugeVec(prometheus::GaugeVec),
+    IntCounter(prometheus::IntCounter),
+    IntCounterVec(prometheus::IntCounterVec),
+    IntGauge(prometheus::IntGauge),
+}
+
+impl TryInto<prometheus::GaugeVec> for &MetricRef {
+    type Error = anyhow::Error;
+
+    fn try_into(self) -> std::result::Result<prometheus::GaugeVec, Self::Error> {
+        match self {
+            MetricRef::GaugeVec(v) => Ok(v.clone()),
+            _ => Err(anyhow!("Nope")),
+        }
+    }
+}
+
+impl TryInto<prometheus::IntCounter> for &MetricRef {
+    type Error = anyhow::Error;
+
+    fn try_into(self) -> std::result::Result<prometheus::IntCounter, Self::Error> {
+        match self {
+            MetricRef::IntCounter(c) => Ok(c.clone()),
+            _ => Err(anyhow!("Nope")),
+        }
+    }
+}
+
+impl TryInto<prometheus::IntCounterVec> for &MetricRef {
+    type Error = anyhow::Error;
+
+    fn try_into(self) -> std::result::Result<prometheus::IntCounterVec, Self::Error> {
+        match self {
+            MetricRef::IntCounterVec(c) => Ok(c.clone()),
+            _ => Err(anyhow!("Nope")),
+        }
+    }
+}
+
+impl TryInto<prometheus::IntGauge> for &MetricRef {
+    type Error = anyhow::Error;
+
+    fn try_into(self) -> std::result::Result<prometheus::IntGauge, Self::Error> {
+        match self {
+            MetricRef::IntGauge(g) => Ok(g.clone()),
+            _ => Err(anyhow!("Nope")),
+        }
+    }
+}
+
 struct MetricUpdate {
-    update: Box<dyn Fn(&dyn SystemState) -> Result<()> + Send + Sync>,
+    metric: MetricRef,
+    update: Box<dyn Fn(&dyn SystemState, &MetricRef) -> Result<()> + Send + Sync>,
 }
 
 impl MetricUpdate {
     fn update(&self, state: &dyn SystemState) -> Result<()> {
-        (self.update)(state)?;
-        Ok(())
+        (self.update)(state, &self.metric)
     }
 }
 
@@ -111,19 +163,15 @@ fn dump_with_state(state: &dyn SystemState) -> Result<String> {
 
 #[macro_export]
 macro_rules! register_metric {
-    ($ref: ident, $type: ident, $ctor: ident, $help: literal, $update: expr) => {
-        #[dynamic]
-        static $ref: $type = {
-            let m: $type =
-                prometheus::$type::with_opts(prometheus::opts!(stringify!($ctor), $help))
-                    .expect("Error registering metric");
-            let _ = prometheus::register(Box::new(m.clone()));
-            m
-        };
-
-        #[constructor]
+    ($ctor: ident, $type: ident, $help: literal, $update: expr) => {
+        #[static_init::constructor]
         extern "C" fn $ctor() {
+            let m = prometheus::$type::with_opts(prometheus::opts!(stringify!($ctor), $help))
+                .expect("Error registering metric");
+            let _ = prometheus::register(Box::new(m.clone()));
+
             let update = Box::new($crate::MetricUpdate {
+                metric: $crate::MetricRef::$type(m),
                 update: Box::new($update),
             });
             $crate::UPDATE_REGISTRY.register(update);
@@ -133,19 +181,16 @@ macro_rules! register_metric {
 
 #[macro_export]
 macro_rules! register_metric_vec {
-    ($ref: ident, $type: ident, $ctor: ident, $help: literal, $labels: expr, $update: expr) => {
-        #[dynamic]
-        static $ref: $type = {
+    ($ctor: ident, $type: ident, $help: literal, $labels: expr, $update: expr) => {
+        #[static_init::constructor]
+        extern "C" fn $ctor() {
             let m: $type =
                 prometheus::$type::new(prometheus::opts!(stringify!($ctor), $help), $labels)
                     .expect("Error registering metric ");
             let _ = prometheus::register(Box::new(m.clone()));
-            m
-        };
 
-        #[constructor]
-        extern "C" fn $ctor() {
             let update = Box::new($crate::MetricUpdate {
+                metric: $crate::MetricRef::$type(m),
                 update: Box::new($update),
             });
             $crate::UPDATE_REGISTRY.register(update);

@@ -3,7 +3,10 @@ use actix_web::{App, HttpResponse, HttpServer, Responder, get, http::KeepAlive};
 #[get("/metrics")]
 async fn metrics_endpoint() -> impl Responder{
     match node_exporter::dump() {
-        Ok(metrics) => HttpResponse::Ok().body(metrics),
+        Ok((metrics, _err)) => {
+            // XXX Log errors
+            HttpResponse::Ok().body(metrics)
+        },
         Err(_) => HttpResponse::InternalServerError().finish(),
     }
 }

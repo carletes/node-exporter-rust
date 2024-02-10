@@ -1,5 +1,6 @@
 use crate::{register_metric, register_metric_vec};
 
+use anyhow::anyhow;
 use prometheus::{GaugeVec, IntCounter, IntCounterVec, IntGauge};
 
 register_metric!(
@@ -23,17 +24,26 @@ mod tests_boot_time {
     fn valid() -> crate::Result<()> {
         let mut state = MockSystemState::default();
         state.boot_time = 42;
-        let m = dump_with_state(&state)?;
+        let (m, _) = dump_with_state(&state)?;
         assert!(m.contains("node_boot_time_seconds 42"), "Metrics: <{}>", m);
         Ok(())
     }
 
     #[test]
-    fn too_large() {
+    fn too_large() -> crate::Result<()> {
         let mut state = MockSystemState::default();
         state.boot_time = (i64::MAX as u64) + 1;
-        let m = dump_with_state(&state);
-        assert!(m.is_err());
+        let (m, err) = dump_with_state(&state)?;
+        assert!(m.contains("node_boot_time_seconds "), "Metrics: <{}>", m);
+        assert!(
+            err.contains(
+                &"node_boot_time_seconds: out of range integral type conversion attempted"
+                    .to_string()
+            ),
+            "Errors: {:?}",
+            err
+        );
+        Ok(())
     }
 }
 
@@ -43,9 +53,19 @@ register_metric!(
     "Total number of context switches.",
     |state, m| {
         let c: IntCounter = m.try_into()?;
-        c.reset();
-        c.inc_by(state.context_switches());
-        Ok(())
+        let cur = c.get();
+        let new = state.context_switches();
+        if new < cur {
+            Err(anyhow!(
+                "Number of context switches {} lesser than current metric value {}",
+                new,
+                cur
+            ))
+        } else {
+            c.reset();
+            c.inc_by(new);
+            Ok(())
+        }
     }
 );
 
@@ -57,11 +77,40 @@ mod tests_context_switches {
     fn valid() -> crate::Result<()> {
         let mut state = MockSystemState::default();
         state.context_switches = 42;
-        let m = dump_with_state(&state)?;
+        let (m, _) = dump_with_state(&state)?;
         assert!(
             m.contains("node_context_switches_total 42"),
             "Metrics: <{}>",
             m
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn unexpected_downcount() -> crate::Result<()> {
+        let mut state = MockSystemState::default();
+        state.context_switches = 42;
+        let (m, _) = dump_with_state(&state)?;
+        assert!(
+            m.contains("node_context_switches_total 42"),
+            "Metrics: <{}>",
+            m
+        );
+
+        state.context_switches = 41;
+        let (m, err) = dump_with_state(&state)?;
+        assert!(
+            m.contains("node_context_switches_total 42"),
+            "Metrics: <{}>",
+            m
+        );
+        assert!(
+            err.contains(
+                &"node_context_switches_total: Number of context switches 41 lesser than current metric value 42"
+                    .to_string()
+            ),
+            "Errors: {:?}",
+            err
         );
         Ok(())
     }
@@ -115,11 +164,17 @@ mod tests_procs_blocked {
     use crate::tests::{dump_with_state, MockSystemState};
 
     #[test]
-    fn procs_blocked_unavailable() {
+    fn unavailable() -> crate::Result<()> {
         let mut state = MockSystemState::default();
         state.procs_blocked = None;
-        let m = dump_with_state(&state);
-        assert!(m.is_ok());
+        let (m, err) = dump_with_state(&state)?;
+        assert!(m.contains("node_procs_blocked 0"), "Metrics: {}", m);
+        assert!(
+            !err.contains(&"node_procs_blocked:".to_string()),
+            "Errors: {:?}",
+            err
+        );
+        Ok(())
     }
 }
 
@@ -147,10 +202,16 @@ mod tests_procs_running {
     use crate::tests::{dump_with_state, MockSystemState};
 
     #[test]
-    fn procs_running_unavailable() {
+    fn unavailable() -> crate::Result<()> {
         let mut state = MockSystemState::default();
         state.procs_running = None;
-        let m = dump_with_state(&state);
-        assert!(m.is_ok());
+        let (m, err) = dump_with_state(&state)?;
+        assert!(m.contains("node_procs_running 0"), "Metrics: {}", m);
+        assert!(
+            !err.contains(&"node_procs_running:".to_string()),
+            "Errors: {:?}",
+            err
+        );
+        Ok(())
     }
 }

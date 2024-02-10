@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::sync::Arc;
 
 use anyhow::anyhow;
@@ -49,65 +50,72 @@ impl SystemState for CurrentSystemState {
     }
 }
 
-enum MetricRef {
+enum Metric {
     GaugeVec(prometheus::GaugeVec),
     IntCounter(prometheus::IntCounter),
     IntCounterVec(prometheus::IntCounterVec),
     IntGauge(prometheus::IntGauge),
 }
 
-impl TryInto<prometheus::GaugeVec> for &MetricRef {
+impl TryInto<prometheus::GaugeVec> for &Metric {
     type Error = anyhow::Error;
 
     fn try_into(self) -> std::result::Result<prometheus::GaugeVec, Self::Error> {
         match self {
-            MetricRef::GaugeVec(v) => Ok(v.clone()),
+            Metric::GaugeVec(v) => Ok(v.clone()),
             _ => Err(anyhow!("Nope")),
         }
     }
 }
 
-impl TryInto<prometheus::IntCounter> for &MetricRef {
+impl TryInto<prometheus::IntCounter> for &Metric {
     type Error = anyhow::Error;
 
     fn try_into(self) -> std::result::Result<prometheus::IntCounter, Self::Error> {
         match self {
-            MetricRef::IntCounter(c) => Ok(c.clone()),
+            Metric::IntCounter(c) => Ok(c.clone()),
             _ => Err(anyhow!("Nope")),
         }
     }
 }
 
-impl TryInto<prometheus::IntCounterVec> for &MetricRef {
+impl TryInto<prometheus::IntCounterVec> for &Metric {
     type Error = anyhow::Error;
 
     fn try_into(self) -> std::result::Result<prometheus::IntCounterVec, Self::Error> {
         match self {
-            MetricRef::IntCounterVec(c) => Ok(c.clone()),
+            Metric::IntCounterVec(c) => Ok(c.clone()),
             _ => Err(anyhow!("Nope")),
         }
     }
 }
 
-impl TryInto<prometheus::IntGauge> for &MetricRef {
+impl TryInto<prometheus::IntGauge> for &Metric {
     type Error = anyhow::Error;
 
     fn try_into(self) -> std::result::Result<prometheus::IntGauge, Self::Error> {
         match self {
-            MetricRef::IntGauge(g) => Ok(g.clone()),
+            Metric::IntGauge(g) => Ok(g.clone()),
             _ => Err(anyhow!("Nope")),
         }
     }
 }
 
 struct MetricUpdate {
-    metric: MetricRef,
-    update: Box<dyn Fn(&dyn SystemState, &MetricRef) -> Result<()> + Send + Sync>,
+    name: String,
+    metric: Metric,
+    update: Box<dyn Fn(&dyn SystemState, &Metric) -> Result<()> + Send + Sync>,
 }
 
 impl MetricUpdate {
     fn update(&self, state: &dyn SystemState) -> Result<()> {
         (self.update)(state, &self.metric)
+    }
+}
+
+impl Display for MetricUpdate {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name)
     }
 }
 
@@ -132,17 +140,21 @@ impl UpdateRegistry {
         self.r.write().register(m);
     }
 
-    fn dump(&self, state: &dyn SystemState) -> Result<String> {
+    fn dump(&self, state: &dyn SystemState) -> Result<(String, Vec<String>)> {
+        let mut errors: Vec<String> = Vec::new();
+
         for m in &self.r.read().metrics {
-            // XXX Collect errors instead of returning a failure after the first error.
-            m.update(state)?;
+            let _ = m.update(state).or_else(|err| {
+                errors.push(format!("{}: {}", m.name, err.to_string()));
+                Err(err)
+            });
         }
 
         let mut buffer = vec![];
         let encoder = TextEncoder::new();
         let metric_families = prometheus::gather();
         encoder.encode(&metric_families, &mut buffer)?;
-        Ok(String::from_utf8(buffer)?)
+        Ok((String::from_utf8(buffer)?, errors))
     }
 }
 
@@ -152,12 +164,12 @@ static UPDATE_REGISTRY: UpdateRegistry = {
     r
 };
 
-pub fn dump() -> Result<String> {
+pub fn dump() -> Result<(String, Vec<String>)> {
     let state = CurrentSystemState::new()?;
     dump_with_state(&state)
 }
 
-fn dump_with_state(state: &dyn SystemState) -> Result<String> {
+fn dump_with_state(state: &dyn SystemState) -> Result<(String, Vec<String>)> {
     Ok(UPDATE_REGISTRY.dump(state)?)
 }
 
@@ -171,7 +183,8 @@ macro_rules! register_metric {
             let _ = prometheus::register(Box::new(m.clone()));
 
             let update = Box::new($crate::MetricUpdate {
-                metric: $crate::MetricRef::$type(m),
+                name: stringify!($ctor).to_string(),
+                metric: $crate::Metric::$type(m),
                 update: Box::new($update),
             });
             $crate::UPDATE_REGISTRY.register(update);
@@ -190,7 +203,8 @@ macro_rules! register_metric_vec {
             let _ = prometheus::register(Box::new(m.clone()));
 
             let update = Box::new($crate::MetricUpdate {
-                metric: $crate::MetricRef::$type(m),
+                name: stringify!($ctor).to_string(),
+                metric: $crate::Metric::$type(m),
                 update: Box::new($update),
             });
             $crate::UPDATE_REGISTRY.register(update);
@@ -235,7 +249,7 @@ mod tests {
         static ref LOCK: Mutex<u8> = const_mutex(0);
     }
 
-    pub fn dump_with_state(state: &dyn SystemState) -> super::Result<String> {
+    pub fn dump_with_state(state: &dyn SystemState) -> super::Result<(String, Vec<String>)> {
         let _unused = LOCK.lock();
         super::dump_with_state(state)
     }

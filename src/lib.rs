@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use anyhow::anyhow;
 use parking_lot::RwLock;
-use procfs::{CpuInfo, Current, CurrentSI, KernelStats};
+use procfs::{CpuInfo, Current, CurrentSI, KernelStats, LoadAverage};
 use prometheus::{Encoder, TextEncoder};
 use static_init::dynamic;
 
@@ -14,13 +14,17 @@ pub type Result<T> = anyhow::Result<T>;
 trait SystemState {
     fn boot_time(&self) -> u64;
     fn context_switches(&self) -> u64;
+    fn load1(&self) -> f32;
+    fn load15(&self) -> f32;
+    fn load5(&self) -> f32;
     fn procs_blocked(&self) -> Option<u32>;
     fn procs_running(&self) -> Option<u32>;
 }
 
 struct CurrentSystemState {
-    kernel_stats: KernelStats,
     cpu_info: CpuInfo,
+    kernel_stats: KernelStats,
+    load_average: LoadAverage,
 }
 
 impl CurrentSystemState {
@@ -28,6 +32,7 @@ impl CurrentSystemState {
         Ok(CurrentSystemState {
             cpu_info: CpuInfo::current()?,
             kernel_stats: KernelStats::current()?,
+            load_average: LoadAverage::current()?,
         })
     }
 }
@@ -41,6 +46,18 @@ impl SystemState for CurrentSystemState {
         self.kernel_stats.ctxt
     }
 
+    fn load1(&self) -> f32 {
+        self.load_average.one
+    }
+
+    fn load15(&self) -> f32 {
+        self.load_average.fifteen
+    }
+
+    fn load5(&self) -> f32 {
+        self.load_average.five
+    }
+
     fn procs_blocked(&self) -> Option<u32> {
         self.kernel_stats.procs_blocked
     }
@@ -51,10 +68,22 @@ impl SystemState for CurrentSystemState {
 }
 
 enum Metric {
+    Gauge(prometheus::Gauge),
     GaugeVec(prometheus::GaugeVec),
     IntCounter(prometheus::IntCounter),
     IntCounterVec(prometheus::IntCounterVec),
     IntGauge(prometheus::IntGauge),
+}
+
+impl TryInto<prometheus::Gauge> for &Metric {
+    type Error = anyhow::Error;
+
+    fn try_into(self) -> std::result::Result<prometheus::Gauge, Self::Error> {
+        match self {
+            Metric::Gauge(g) => Ok(g.clone()),
+            _ => Err(anyhow!("Nope")),
+        }
+    }
 }
 
 impl TryInto<prometheus::GaugeVec> for &Metric {
@@ -223,6 +252,9 @@ mod tests {
     pub struct MockSystemState {
         pub boot_time: u64,
         pub context_switches: u64,
+        pub load1: f32,
+        pub load15: f32,
+        pub load5: f32,
         pub procs_blocked: Option<u32>,
         pub procs_running: Option<u32>,
     }
@@ -234,6 +266,18 @@ mod tests {
 
         fn context_switches(&self) -> u64 {
             self.context_switches
+        }
+
+        fn load1(&self) -> f32 {
+            self.load1
+        }
+
+        fn load15(&self) -> f32 {
+            self.load15
+        }
+
+        fn load5(&self) -> f32 {
+            self.load5
         }
 
         fn procs_blocked(&self) -> Option<u32> {

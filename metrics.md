@@ -475,15 +475,6 @@
     # HELP node_intr_total Total number of interrupts serviced.
     # TYPE node_intr_total counter
     node_intr_total 2.3324872e+07
-    # HELP node_load1 1m load average.
-    # TYPE node_load1 gauge
-    node_load1 0.1
-    # HELP node_load15 15m load average.
-    # TYPE node_load15 gauge
-    node_load15 0.34
-    # HELP node_load5 5m load average.
-    # TYPE node_load5 gauge
-    node_load5 0.22
     # HELP node_memory_Active_anon_bytes Memory information field Active_anon_bytes.
     # TYPE node_memory_Active_anon_bytes gauge
     node_memory_Active_anon_bytes 3.478810624e+09
@@ -1612,6 +1603,18 @@
     # HELP node_context_switches_total Total number of context switches.
     # TYPE node_context_switches_total counter
     node_context_switches_total 2.8640998e+07
+
+    # HELP node_load1 1m load average.
+    # TYPE node_load1 gauge
+    node_load1 0.1
+
+    # HELP node_load15 15m load average.
+    # TYPE node_load15 gauge
+    node_load15 0.34
+
+    # HELP node_load5 5m load average.
+    # TYPE node_load5 gauge
+    node_load5 0.22
 
     # HELP node_procs_blocked Number of processes blocked waiting for I/O to complete.
     # TYPE node_procs_blocked gauge

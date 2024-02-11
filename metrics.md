@@ -475,72 +475,6 @@
     # HELP node_intr_total Total number of interrupts serviced.
     # TYPE node_intr_total counter
     node_intr_total 2.3324872e+07
-    # HELP node_memory_Active_anon_bytes Memory information field Active_anon_bytes.
-    # TYPE node_memory_Active_anon_bytes gauge
-    node_memory_Active_anon_bytes 3.478810624e+09
-    # HELP node_memory_Active_bytes Memory information field Active_bytes.
-    # TYPE node_memory_Active_bytes gauge
-    node_memory_Active_bytes 5.303324672e+09
-    # HELP node_memory_Active_file_bytes Memory information field Active_file_bytes.
-    # TYPE node_memory_Active_file_bytes gauge
-    node_memory_Active_file_bytes 1.824514048e+09
-    # HELP node_memory_AnonHugePages_bytes Memory information field AnonHugePages_bytes.
-    # TYPE node_memory_AnonHugePages_bytes gauge
-    node_memory_AnonHugePages_bytes 0
-    # HELP node_memory_AnonPages_bytes Memory information field AnonPages_bytes.
-    # TYPE node_memory_AnonPages_bytes gauge
-    node_memory_AnonPages_bytes 3.401265152e+09
-    # HELP node_memory_Bounce_bytes Memory information field Bounce_bytes.
-    # TYPE node_memory_Bounce_bytes gauge
-    node_memory_Bounce_bytes 0
-    # HELP node_memory_Buffers_bytes Memory information field Buffers_bytes.
-    # TYPE node_memory_Buffers_bytes gauge
-    node_memory_Buffers_bytes 2.88768e+06
-    # HELP node_memory_Cached_bytes Memory information field Cached_bytes.
-    # TYPE node_memory_Cached_bytes gauge
-    node_memory_Cached_bytes 1.1580862464e+10
-    # HELP node_memory_CmaFree_bytes Memory information field CmaFree_bytes.
-    # TYPE node_memory_CmaFree_bytes gauge
-    node_memory_CmaFree_bytes 0
-    # HELP node_memory_CmaTotal_bytes Memory information field CmaTotal_bytes.
-    # TYPE node_memory_CmaTotal_bytes gauge
-    node_memory_CmaTotal_bytes 0
-    # HELP node_memory_CommitLimit_bytes Memory information field CommitLimit_bytes.
-    # TYPE node_memory_CommitLimit_bytes gauge
-    node_memory_CommitLimit_bytes 3.7904789504e+10
-    # HELP node_memory_Committed_AS_bytes Memory information field Committed_AS_bytes.
-    # TYPE node_memory_Committed_AS_bytes gauge
-    node_memory_Committed_AS_bytes 8.03995648e+09
-    # HELP node_memory_DirectMap1G_bytes Memory information field DirectMap1G_bytes.
-    # TYPE node_memory_DirectMap1G_bytes gauge
-    node_memory_DirectMap1G_bytes 6.2277025792e+10
-    # HELP node_memory_DirectMap2M_bytes Memory information field DirectMap2M_bytes.
-    # TYPE node_memory_DirectMap2M_bytes gauge
-    node_memory_DirectMap2M_bytes 6.002049024e+09
-    # HELP node_memory_DirectMap4k_bytes Memory information field DirectMap4k_bytes.
-    # TYPE node_memory_DirectMap4k_bytes gauge
-    node_memory_DirectMap4k_bytes 2.13581824e+08
-    # HELP node_memory_Dirty_bytes Memory information field Dirty_bytes.
-    # TYPE node_memory_Dirty_bytes gauge
-    node_memory_Dirty_bytes 0
-    # HELP node_memory_FileHugePages_bytes Memory information field FileHugePages_bytes.
-    # TYPE node_memory_FileHugePages_bytes gauge
-    node_memory_FileHugePages_bytes 0
-    # HELP node_memory_FilePmdMapped_bytes Memory information field FilePmdMapped_bytes.
-    # TYPE node_memory_FilePmdMapped_bytes gauge
-    node_memory_FilePmdMapped_bytes 0
-    # HELP node_memory_HugePages_Free Memory information field HugePages_Free.
-    # TYPE node_memory_HugePages_Free gauge
-    node_memory_HugePages_Free 0
-    # HELP node_memory_HugePages_Rsvd Memory information field HugePages_Rsvd.
-    # TYPE node_memory_HugePages_Rsvd gauge
-    node_memory_HugePages_Rsvd 0
-    # HELP node_memory_HugePages_Surp Memory information field HugePages_Surp.
-    # TYPE node_memory_HugePages_Surp gauge
-    node_memory_HugePages_Surp 0
-    # HELP node_memory_HugePages_Total Memory information field HugePages_Total.
-    # TYPE node_memory_HugePages_Total gauge
-    node_memory_HugePages_Total 0
     # HELP node_memory_Hugepagesize_bytes Memory information field Hugepagesize_bytes.
     # TYPE node_memory_Hugepagesize_bytes gauge
     node_memory_Hugepagesize_bytes 2.097152e+06
@@ -1615,6 +1549,94 @@
     # HELP node_load5 5m load average.
     # TYPE node_load5 gauge
     node_load5 0.22
+
+    # HELP node_memory_Active_anon_bytes Memory information field Active_anon_bytes.
+    # TYPE node_memory_Active_anon_bytes gauge
+    node_memory_Active_anon_bytes 3.478810624e+09
+
+    # HELP node_memory_Active_bytes Memory information field Active_bytes.
+    # TYPE node_memory_Active_bytes gauge
+    node_memory_Active_bytes 5.303324672e+09
+
+    # HELP node_memory_Active_file_bytes Memory information field Active_file_bytes.
+    # TYPE node_memory_Active_file_bytes gauge
+    node_memory_Active_file_bytes 1.824514048e+09
+
+    # HELP node_memory_AnonHugePages_bytes Memory information field AnonHugePages_bytes.
+    # TYPE node_memory_AnonHugePages_bytes gauge
+    node_memory_AnonHugePages_bytes 0
+
+    # HELP node_memory_AnonPages_bytes Memory information field AnonPages_bytes.
+    # TYPE node_memory_AnonPages_bytes gauge
+    node_memory_AnonPages_bytes 3.401265152e+09
+
+    # HELP node_memory_Bounce_bytes Memory information field Bounce_bytes.
+    # TYPE node_memory_Bounce_bytes gauge
+    node_memory_Bounce_bytes 0
+
+    # HELP node_memory_Buffers_bytes Memory information field Buffers_bytes.
+    # TYPE node_memory_Buffers_bytes gauge
+    node_memory_Buffers_bytes 2.88768e+06
+
+    # HELP node_memory_Cached_bytes Memory information field Cached_bytes.
+    # TYPE node_memory_Cached_bytes gauge
+    node_memory_Cached_bytes 1.1580862464e+10
+
+    # HELP node_memory_CmaFree_bytes Memory information field CmaFree_bytes.
+    # TYPE node_memory_CmaFree_bytes gauge
+    node_memory_CmaFree_bytes 0
+
+    # HELP node_memory_CmaTotal_bytes Memory information field CmaTotal_bytes.
+    # TYPE node_memory_CmaTotal_bytes gauge
+    node_memory_CmaTotal_bytes 0
+
+    # HELP node_memory_CommitLimit_bytes Memory information field CommitLimit_bytes.
+    # TYPE node_memory_CommitLimit_bytes gauge
+    node_memory_CommitLimit_bytes 3.7904789504e+10
+
+    # HELP node_memory_Committed_AS_bytes Memory information field Committed_AS_bytes.
+    # TYPE node_memory_Committed_AS_bytes gauge
+    node_memory_Committed_AS_bytes 8.03995648e+09
+
+    # HELP node_memory_DirectMap1G_bytes Memory information field DirectMap1G_bytes.
+    # TYPE node_memory_DirectMap1G_bytes gauge
+    node_memory_DirectMap1G_bytes 6.2277025792e+10
+
+    # HELP node_memory_DirectMap2M_bytes Memory information field DirectMap2M_bytes.
+    # TYPE node_memory_DirectMap2M_bytes gauge
+    node_memory_DirectMap2M_bytes 6.002049024e+09
+
+    # HELP node_memory_DirectMap4k_bytes Memory information field DirectMap4k_bytes.
+    # TYPE node_memory_DirectMap4k_bytes gauge
+    node_memory_DirectMap4k_bytes 2.13581824e+08
+
+    # HELP node_memory_Dirty_bytes Memory information field Dirty_bytes.
+    # TYPE node_memory_Dirty_bytes gauge
+    node_memory_Dirty_bytes 0
+
+    # HELP node_memory_FileHugePages_bytes Memory information field FileHugePages_bytes.
+    # TYPE node_memory_FileHugePages_bytes gauge
+    node_memory_FileHugePages_bytes 0
+
+    # HELP node_memory_FilePmdMapped_bytes Memory information field FilePmdMapped_bytes.
+    # TYPE node_memory_FilePmdMapped_bytes gauge
+    node_memory_FilePmdMapped_bytes 0
+
+    # HELP node_memory_HugePages_Free Memory information field HugePages_Free.
+    # TYPE node_memory_HugePages_Free gauge
+    node_memory_HugePages_Free 0
+
+    # HELP node_memory_HugePages_Rsvd Memory information field HugePages_Rsvd.
+    # TYPE node_memory_HugePages_Rsvd gauge
+    node_memory_HugePages_Rsvd 0
+
+    # HELP node_memory_HugePages_Surp Memory information field HugePages_Surp.
+    # TYPE node_memory_HugePages_Surp gauge
+    node_memory_HugePages_Surp 0
+
+    # HELP node_memory_HugePages_Total Memory information field HugePages_Total.
+    # TYPE node_memory_HugePages_Total gauge
+    node_memory_HugePages_Total 0
 
     # HELP node_procs_blocked Number of processes blocked waiting for I/O to complete.
     # TYPE node_procs_blocked gauge

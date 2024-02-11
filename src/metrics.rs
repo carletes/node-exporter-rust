@@ -164,11 +164,29 @@ mod tests_procs_blocked {
     use crate::tests::{dump_with_state, MockSystemState};
 
     #[test]
+    fn valid() -> crate::Result<()> {
+        let mut state = MockSystemState::default();
+        state.procs_blocked = Some(42);
+        let (m, err) = dump_with_state(&state)?;
+        assert!(m.contains("node_procs_blocked 42"), "Metrics: {}", m);
+        assert!(
+            !err.contains(&"node_procs_blocked:".to_string()),
+            "Errors: {:?}",
+            err
+        );
+        Ok(())
+    }
+
+    #[test]
     fn unavailable() -> crate::Result<()> {
         let mut state = MockSystemState::default();
+        state.procs_blocked = Some(42);
+        let (m, _) = dump_with_state(&state)?;
+        assert!(m.contains("node_procs_blocked 42"), "Metrics: {}", m);
+
         state.procs_blocked = None;
         let (m, err) = dump_with_state(&state)?;
-        assert!(m.contains("node_procs_blocked 0"), "Metrics: {}", m);
+        assert!(m.contains("node_procs_blocked 42"), "Metrics: {}", m);
         assert!(
             !err.contains(&"node_procs_blocked:".to_string()),
             "Errors: {:?}",
@@ -202,11 +220,29 @@ mod tests_procs_running {
     use crate::tests::{dump_with_state, MockSystemState};
 
     #[test]
+    fn valid() -> crate::Result<()> {
+        let mut state = MockSystemState::default();
+        state.procs_running = Some(42);
+        let (m, err) = dump_with_state(&state)?;
+        assert!(m.contains("node_procs_running 42"), "Metrics: {}", m);
+        assert!(
+            !err.contains(&"node_procs_running:".to_string()),
+            "Errors: {:?}",
+            err
+        );
+        Ok(())
+    }
+
+    #[test]
     fn unavailable() -> crate::Result<()> {
         let mut state = MockSystemState::default();
+        state.procs_running = Some(42);
+        let (m, _) = dump_with_state(&state)?;
+        assert!(m.contains("node_procs_running 42"), "Metrics: {}", m);
+
         state.procs_running = None;
         let (m, err) = dump_with_state(&state)?;
-        assert!(m.contains("node_procs_running 0"), "Metrics: {}", m);
+        assert!(m.contains("node_procs_running 42"), "Metrics: {}", m);
         assert!(
             !err.contains(&"node_procs_running:".to_string()),
             "Errors: {:?}",

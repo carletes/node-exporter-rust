@@ -19,9 +19,10 @@ register_metric!(
 #[cfg(test)]
 mod tests_boot_time {
     use crate::tests::{dump_with_state, MockSystemState};
+    use crate::Result;
 
     #[test]
-    fn valid() -> crate::Result<()> {
+    fn valid() -> Result<()> {
         let mut state = MockSystemState::default();
         state.boot_time = 42;
         let (m, _) = dump_with_state(&state)?;
@@ -30,7 +31,7 @@ mod tests_boot_time {
     }
 
     #[test]
-    fn too_large() -> crate::Result<()> {
+    fn too_large() -> Result<()> {
         let mut state = MockSystemState::default();
         state.boot_time = (i64::MAX as u64) + 1;
         let (m, err) = dump_with_state(&state)?;
@@ -72,9 +73,10 @@ register_metric!(
 #[cfg(test)]
 mod tests_context_switches {
     use crate::tests::{dump_with_state, MockSystemState};
+    use crate::Result;
 
     #[test]
-    fn valid() -> crate::Result<()> {
+    fn valid() -> Result<()> {
         let mut state = MockSystemState::default();
         state.context_switches = 42;
         let (m, _) = dump_with_state(&state)?;
@@ -87,7 +89,7 @@ mod tests_context_switches {
     }
 
     #[test]
-    fn unexpected_downcount() -> crate::Result<()> {
+    fn unexpected_downcount() -> Result<()> {
         let mut state = MockSystemState::default();
         state.context_switches = 42;
         let (m, _) = dump_with_state(&state)?;
@@ -162,9 +164,10 @@ register_metric!(
 #[cfg(test)]
 mod tests_procs_blocked {
     use crate::tests::{dump_with_state, MockSystemState};
+    use crate::Result;
 
     #[test]
-    fn valid() -> crate::Result<()> {
+    fn valid() -> Result<()> {
         let mut state = MockSystemState::default();
         state.procs_blocked = Some(42);
         let (m, err) = dump_with_state(&state)?;
@@ -178,7 +181,7 @@ mod tests_procs_blocked {
     }
 
     #[test]
-    fn unavailable() -> crate::Result<()> {
+    fn unavailable() -> Result<()> {
         let mut state = MockSystemState::default();
         state.procs_blocked = Some(42);
         let (m, _) = dump_with_state(&state)?;

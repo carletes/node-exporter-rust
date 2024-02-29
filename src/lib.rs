@@ -150,11 +150,11 @@ impl Display for MetricUpdate {
 
 #[derive(Default)]
 struct UpdateRegistryCore {
-    metrics: Vec<Box<MetricUpdate>>,
+    metrics: Vec<MetricUpdate>,
 }
 
 impl UpdateRegistryCore {
-    fn register(&mut self, m: Box<MetricUpdate>) -> () {
+    fn register(&mut self, m: MetricUpdate) {
         self.metrics.push(m);
     }
 }
@@ -165,7 +165,7 @@ struct UpdateRegistry {
 }
 
 impl UpdateRegistry {
-    fn register(&self, m: Box<MetricUpdate>) -> () {
+    fn register(&self, m: MetricUpdate) {
         self.r.write().register(m);
     }
 
@@ -173,9 +173,9 @@ impl UpdateRegistry {
         let mut errors: Vec<String> = Vec::new();
 
         for m in &self.r.read().metrics {
-            let _ = m.update(state).or_else(|err| {
-                errors.push(format!("{}: {}", m.name, err.to_string()));
-                Err(err)
+            let _ = m.update(state).map_err(|err| {
+                errors.push(format!("{}: {}", m.name, err));
+                err
             });
         }
 
@@ -188,10 +188,7 @@ impl UpdateRegistry {
 }
 
 #[dynamic]
-static UPDATE_REGISTRY: UpdateRegistry = {
-    let r = UpdateRegistry::default();
-    r
-};
+static UPDATE_REGISTRY: UpdateRegistry = UpdateRegistry::default();
 
 pub fn dump() -> Result<(String, Vec<String>)> {
     let state = CurrentSystemState::new()?;
@@ -199,7 +196,7 @@ pub fn dump() -> Result<(String, Vec<String>)> {
 }
 
 fn dump_with_state(state: &dyn SystemState) -> Result<(String, Vec<String>)> {
-    Ok(UPDATE_REGISTRY.dump(state)?)
+    UPDATE_REGISTRY.dump(state)
 }
 
 #[macro_export]
@@ -211,11 +208,11 @@ macro_rules! register_metric {
                 .expect("Error registering metric");
             let _ = prometheus::register(Box::new(m.clone()));
 
-            let update = Box::new($crate::MetricUpdate {
+            let update = $crate::MetricUpdate {
                 name: stringify!($ctor).to_string(),
                 metric: $crate::Metric::$type(m),
                 update: Box::new($update),
-            });
+            };
             $crate::UPDATE_REGISTRY.register(update);
         }
     };
@@ -231,11 +228,11 @@ macro_rules! register_metric_vec {
                     .expect("Error registering metric ");
             let _ = prometheus::register(Box::new(m.clone()));
 
-            let update = Box::new($crate::MetricUpdate {
+            let update = $crate::MetricUpdate {
                 name: stringify!($ctor).to_string(),
                 metric: $crate::Metric::$type(m),
                 update: Box::new($update),
-            });
+            };
             $crate::UPDATE_REGISTRY.register(update);
         }
     };

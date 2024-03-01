@@ -3,17 +3,21 @@ use std::sync::Arc;
 
 use anyhow::anyhow;
 use parking_lot::RwLock;
-use procfs::{CpuInfo, Current, CurrentSI, KernelStats, LoadAverage, Meminfo};
+use procfs::{CpuTime, Current, CurrentSI, KernelStats, LoadAverage, Meminfo};
 use prometheus::{Encoder, TextEncoder};
 use static_init::dynamic;
+use sysfs::CpuStats;
 
 mod metrics;
+mod sysfs;
 
 pub type Result<T> = anyhow::Result<T>;
 
 trait SystemState {
     fn boot_time(&self) -> u64;
     fn context_switches(&self) -> u64;
+    fn cpu_stats(&self) -> &CpuStats;
+    fn cpu_time(&self) -> &Vec<CpuTime>;
     fn load15(&self) -> f32;
     fn load1(&self) -> f32;
     fn load5(&self) -> f32;
@@ -78,7 +82,7 @@ trait SystemState {
 }
 
 struct CurrentSystemState {
-    cpu_info: CpuInfo,
+    cpu_stats: CpuStats,
     kernel_stats: KernelStats,
     load_average: LoadAverage,
     meminfo: Meminfo,
@@ -87,7 +91,7 @@ struct CurrentSystemState {
 impl CurrentSystemState {
     fn new() -> Result<Self> {
         Ok(CurrentSystemState {
-            cpu_info: CpuInfo::current()?,
+            cpu_stats: CpuStats::current()?,
             kernel_stats: KernelStats::current()?,
             load_average: LoadAverage::current()?,
             meminfo: Meminfo::current()?,
@@ -102,6 +106,14 @@ impl SystemState for CurrentSystemState {
 
     fn context_switches(&self) -> u64 {
         self.kernel_stats.ctxt
+    }
+
+    fn cpu_stats(&self) -> &CpuStats {
+        &self.cpu_stats
+    }
+
+    fn cpu_time(&self) -> &Vec<CpuTime> {
+        &self.kernel_stats.cpu_time
     }
 
     fn load1(&self) -> f32 {
@@ -350,11 +362,23 @@ impl SystemState for CurrentSystemState {
 }
 
 enum Metric {
+    CounterVec(prometheus::CounterVec),
     Gauge(prometheus::Gauge),
-    GaugeVec(prometheus::GaugeVec),
     IntCounter(prometheus::IntCounter),
     IntCounterVec(prometheus::IntCounterVec),
     IntGauge(prometheus::IntGauge),
+    IntGaugeVec(prometheus::IntGaugeVec),
+}
+
+impl TryInto<prometheus::CounterVec> for &Metric {
+    type Error = anyhow::Error;
+
+    fn try_into(self) -> std::result::Result<prometheus::CounterVec, Self::Error> {
+        match self {
+            Metric::CounterVec(c) => Ok(c.clone()),
+            _ => Err(anyhow!("Nope")),
+        }
+    }
 }
 
 impl TryInto<prometheus::Gauge> for &Metric {
@@ -363,17 +387,6 @@ impl TryInto<prometheus::Gauge> for &Metric {
     fn try_into(self) -> std::result::Result<prometheus::Gauge, Self::Error> {
         match self {
             Metric::Gauge(g) => Ok(g.clone()),
-            _ => Err(anyhow!("Nope")),
-        }
-    }
-}
-
-impl TryInto<prometheus::GaugeVec> for &Metric {
-    type Error = anyhow::Error;
-
-    fn try_into(self) -> std::result::Result<prometheus::GaugeVec, Self::Error> {
-        match self {
-            Metric::GaugeVec(v) => Ok(v.clone()),
             _ => Err(anyhow!("Nope")),
         }
     }
@@ -407,6 +420,17 @@ impl TryInto<prometheus::IntGauge> for &Metric {
     fn try_into(self) -> std::result::Result<prometheus::IntGauge, Self::Error> {
         match self {
             Metric::IntGauge(g) => Ok(g.clone()),
+            _ => Err(anyhow!("Nope")),
+        }
+    }
+}
+
+impl TryInto<prometheus::IntGaugeVec> for &Metric {
+    type Error = anyhow::Error;
+
+    fn try_into(self) -> std::result::Result<prometheus::IntGaugeVec, Self::Error> {
+        match self {
+            Metric::IntGaugeVec(g) => Ok(g.clone()),
             _ => Err(anyhow!("Nope")),
         }
     }
@@ -526,6 +550,9 @@ macro_rules! register_metric_vec {
 mod tests {
     use lazy_static::lazy_static;
     use parking_lot::{const_mutex, Mutex};
+    use procfs::CpuTime;
+
+    use crate::sysfs::CpuStats;
 
     use super::SystemState;
 
@@ -533,6 +560,8 @@ mod tests {
     pub struct MockSystemState {
         pub boot_time: u64,
         pub context_switches: u64,
+        pub cpu_stats: CpuStats,
+        pub cpu_time: Vec<CpuTime>,
         pub load15: f32,
         pub load1: f32,
         pub load5: f32,
@@ -603,6 +632,14 @@ mod tests {
 
         fn context_switches(&self) -> u64 {
             self.context_switches
+        }
+
+        fn cpu_stats(&self) -> &CpuStats {
+            &self.cpu_stats
+        }
+
+        fn cpu_time(&self) -> &Vec<CpuTime> {
+            &self.cpu_time
         }
 
         fn load1(&self) -> f32 {

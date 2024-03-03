@@ -19,7 +19,7 @@ async fn main() -> std::io::Result<()> {
     })
     .bind(("127.0.0.1", 9100))?
     .keep_alive(KeepAlive::Os)
-    .workers(2)
+    .workers(1)
     .run()
     .await
 }

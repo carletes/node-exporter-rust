@@ -14,24 +14,19 @@ name = "node_exporter"
 name = "node-exporter"
 
 [dependencies]
-actix-web = { version = "4.4.1" }
+actix-web = { version = "4.4.1" , default-features = false, features = ["macros"]}
 anyhow = "1.0.79"
 lazy_static = "^1.4"
 parking_lot = "0.12.1"
 procfs = "^0.16"
-prometheus = { version = "0.13.0", features = [] }
+prometheus = { version = "0.13.0", default-features = false }
 static_init = "1.0.3"
 tokio = { version = "1.35.1", features = [
-    "rt-multi-thread",
     "rt",
-    "time",
-    "macros",
-    "io-util",
-    "net",
 ] }
 
 [profile.release]
 debug = false
-lto = "thin"
+lto = "fat"
 opt-level = "z"
 strip = true

@@ -1,11 +1,11 @@
-use actix_web::{App, HttpResponse, HttpServer, Responder, get, http::KeepAlive};
+use actix_web::{App, HttpResponse, HttpServer, Responder, get, http::KeepAlive, http::header::ContentType};
 
 #[get("/metrics")]
 async fn metrics_endpoint() -> impl Responder{
     match node_exporter::dump() {
         Ok((metrics, _err)) => {
             // XXX Log errors
-            HttpResponse::Ok().body(metrics)
+            HttpResponse::Ok().content_type(ContentType::plaintext()).body(metrics)
         },
         Err(_) => HttpResponse::InternalServerError().finish(),
     }

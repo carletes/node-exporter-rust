@@ -17,7 +17,7 @@ async fn main() -> std::io::Result<()> {
         App::new().service(metrics_endpoint)
 
     })
-    .bind(("127.0.0.1", 9100))?
+    .bind(("0.0.0.0", 9100))?
     .keep_alive(KeepAlive::Os)
     .workers(1)
     .run()

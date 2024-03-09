@@ -16,7 +16,9 @@ name = "node-exporter"
 [dependencies]
 actix-web = { version = "4.4.1" , default-features = false, features = ["macros"]}
 anyhow = "1.0.79"
+env_logger = { version = "0.11.3", default-features = false }
 lazy_static = "^1.4"
+log = { version = "0.4.21", default-features = false }
 parking_lot = "0.12.1"
 procfs = "^0.16"
 prometheus = { version = "0.13.0", default-features = false }

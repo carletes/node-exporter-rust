@@ -2,6 +2,7 @@ use std::fmt::Display;
 use std::sync::Arc;
 
 use anyhow::anyhow;
+use log::trace;
 use parking_lot::RwLock;
 use procfs::{CpuTime, Current, CurrentSI, KernelStats, LoadAverage, Meminfo};
 use prometheus::{Encoder, TextEncoder};
@@ -479,7 +480,9 @@ impl UpdateRegistry {
         let mut errors: Vec<String> = Vec::new();
 
         for m in &self.r.read().metrics {
+            trace!("Updating metric {}", m.name);
             let _ = m.update(state).map_err(|err| {
+                trace!("Error updating metric {}: {}", m.name, err);
                 errors.push(format!("{}: {}", m.name, err));
                 err
             });
